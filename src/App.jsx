@@ -1,28 +1,57 @@
-import { useState } from 'react'
+import { useState } from "react";
+import Header from "./components/Header";
+import PromptForm from "./components/PromptForm";
+import ImageGrid from "./components/ImageGrid";
+import Footer from "./components/Footer";
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [items, setItems] = useState([]);
+  const [query, setQuery] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  async function fetchImages(q) {
+    try {
+      setLoading(true);
+      setError("");
+      setQuery(q);
+      const base = import.meta.env.VITE_BACKEND_URL || "";
+      const res = await fetch(`${base}/images?query=${encodeURIComponent(q)}&limit=28`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || "Failed to fetch images");
+      setItems(data.items || []);
+    } catch (e) {
+      setError(e.message || "Something went wrong");
+      setItems([]);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 flex items-center justify-center">
-      <div className="bg-white p-8 rounded-lg shadow-lg">
-        <h1 className="text-3xl font-bold text-gray-800 mb-4">
-          Vibe Coding Platform
-        </h1>
-        <p className="text-gray-600 mb-6">
-          Your AI-powered development environment
-        </p>
-        <div className="text-center">
-          <button
-            onClick={() => setCount(count + 1)}
-            className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded"
-          >
-            Count is {count}
-          </button>
-        </div>
+    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-indigo-50">
+      <div className="mx-auto max-w-7xl px-4 pb-12 pt-10">
+        <Header />
+        <PromptForm onSearch={fetchImages} loading={loading} />
+
+        {error && (
+          <div className="mx-auto mt-6 max-w-2xl rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+            {error}
+          </div>
+        )}
+
+        {loading ? (
+          <div className="mt-10 flex items-center justify-center">
+            <div className="h-10 w-10 animate-spin rounded-full border-4 border-blue-600 border-t-transparent"></div>
+          </div>
+        ) : (
+          <ImageGrid items={items} query={query} />
+        )}
+
+        <Footer />
       </div>
     </div>
-  )
+  );
 }
 
-export default App
+export default App;
